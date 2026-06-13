@@ -1,6 +1,6 @@
-# Simple Grid Game
+# Block Puzzle
 
-A tiny Android game with a 3x3 grid. Swipe up, down, left, or right to move the block one cell. The move counter increases only when the block actually moves.
+A tiny Android block puzzle game. Drag the three pieces onto the 8x8 board, fill complete rows or columns to clear them, and keep scoring until no piece fits.
 
 ## Build The APK Online
 
