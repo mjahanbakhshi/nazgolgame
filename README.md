@@ -2,6 +2,8 @@
 
 A tiny Android block puzzle game. Drag the three pieces onto the 8x8 board, fill complete rows or columns to clear them, and keep scoring until no piece fits.
 
+The game has forgiving touch targets for small pieces, keeps the score below the phone camera/status area, and saves the top five scores on the device.
+
 ## Build The APK Online
 
 This project includes a GitHub Actions workflow that builds the APK online.

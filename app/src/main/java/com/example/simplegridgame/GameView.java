@@ -1,18 +1,25 @@
 package com.example.simplegridgame;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.os.Build;
+import android.view.DisplayCutout;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowInsets;
 
 import java.util.Random;
 
 public class GameView extends View {
     private static final int BOARD_SIZE = 8;
     private static final int PIECE_COUNT = 3;
+    private static final int HIGH_SCORE_COUNT = 5;
+    private static final String PREFS_NAME = "block_puzzle_scores";
+    private static final String HIGH_SCORE_KEY_PREFIX = "high_score_";
 
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint cellPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -21,6 +28,9 @@ public class GameView extends View {
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
     private final Random random = new Random();
+    private final SharedPreferences preferences;
+    private final int[] highScores = new int[HIGH_SCORE_COUNT];
+    private final float touchPadding;
 
     private final boolean[][] board = new boolean[BOARD_SIZE][BOARD_SIZE];
     private final Piece[] pieces = new Piece[PIECE_COUNT];
@@ -30,6 +40,7 @@ public class GameView extends View {
     private float dragX;
     private float dragY;
     private boolean gameOver = false;
+    private boolean scoreSaved = false;
 
     private float boardLeft;
     private float boardTop;
@@ -37,6 +48,8 @@ public class GameView extends View {
 
     public GameView(Context context) {
         super(context);
+        preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        touchPadding = 36f * getResources().getDisplayMetrics().density;
 
         backgroundPaint.setColor(Color.rgb(242, 246, 252));
         cellPaint.setColor(Color.rgb(230, 236, 246));
@@ -52,6 +65,7 @@ public class GameView extends View {
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setFakeBoldText(true);
 
+        loadHighScores();
         dealPieces();
     }
 
@@ -77,16 +91,24 @@ public class GameView extends View {
     private void updateLayout() {
         float width = getWidth();
         float height = getHeight();
-        float boardSize = Math.min(width * 0.92f, height * 0.58f);
+        float safeTop = getTopSafeInset();
+        float headerHeight = Math.max(150f, safeTop + 130f);
+        float trayHeight = 250f;
+        float boardSize = Math.min(width * 0.92f, height - headerHeight - trayHeight);
 
         boardCellSize = boardSize / BOARD_SIZE;
         boardLeft = (width - boardSize) / 2f;
-        boardTop = Math.max(120f, height * 0.16f);
+        boardTop = headerHeight;
     }
 
     private void drawScore(Canvas canvas) {
-        textPaint.setTextSize(54f);
-        canvas.drawText("Score: " + score, getWidth() / 2f, 82f, textPaint);
+        float safeTop = getTopSafeInset();
+
+        textPaint.setTextSize(70f);
+        canvas.drawText("Score: " + score, getWidth() / 2f, safeTop + 78f, textPaint);
+
+        textPaint.setTextSize(34f);
+        canvas.drawText("Best: " + highScores[0], getWidth() / 2f, safeTop + 122f, textPaint);
     }
 
     private void drawBoard(Canvas canvas) {
@@ -128,7 +150,7 @@ public class GameView extends View {
     private void drawTrayPieces(Canvas canvas) {
         float trayTop = boardTop + boardCellSize * BOARD_SIZE + 60f;
         float slotWidth = getWidth() / (float) PIECE_COUNT;
-        float previewCellSize = Math.min(boardCellSize * 0.76f, slotWidth / 4.2f);
+        float previewCellSize = Math.min(boardCellSize * 0.92f, slotWidth / 3.6f);
 
         for (int i = 0; i < PIECE_COUNT; i++) {
             Piece piece = pieces[i];
@@ -178,9 +200,17 @@ public class GameView extends View {
 
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(68f);
-        canvas.drawText("Game Over", getWidth() / 2f, getHeight() / 2f - 30f, textPaint);
+        canvas.drawText("Game Over", getWidth() / 2f, getHeight() / 2f - 110f, textPaint);
         textPaint.setTextSize(36f);
-        canvas.drawText("Tap to restart", getWidth() / 2f, getHeight() / 2f + 35f, textPaint);
+        canvas.drawText("Top Scores", getWidth() / 2f, getHeight() / 2f - 45f, textPaint);
+
+        textPaint.setTextSize(32f);
+        for (int i = 0; i < HIGH_SCORE_COUNT; i++) {
+            canvas.drawText((i + 1) + ". " + highScores[i], getWidth() / 2f, getHeight() / 2f + 5f + i * 38f, textPaint);
+        }
+
+        textPaint.setTextSize(34f);
+        canvas.drawText("Tap to restart", getWidth() / 2f, getHeight() / 2f + 225f, textPaint);
         textPaint.setColor(Color.rgb(25, 30, 40));
     }
 
@@ -228,7 +258,10 @@ public class GameView extends View {
             float width = piece.getColumnCount() * piece.previewCellSize;
             float height = piece.getRowCount() * piece.previewCellSize;
 
-            if (x >= piece.previewLeft && x <= piece.previewLeft + width && y >= piece.previewTop && y <= piece.previewTop + height) {
+            if (x >= piece.previewLeft - touchPadding
+                    && x <= piece.previewLeft + width + touchPadding
+                    && y >= piece.previewTop - touchPadding
+                    && y <= piece.previewTop + height + touchPadding) {
                 return i;
             }
         }
@@ -257,6 +290,9 @@ public class GameView extends View {
         }
 
         gameOver = !hasAnyMove();
+        if (gameOver) {
+            saveScoreIfNeeded();
+        }
     }
 
     private DropTarget getDropTarget(Piece piece) {
@@ -365,9 +401,64 @@ public class GameView extends View {
 
         score = 0;
         gameOver = false;
+        scoreSaved = false;
         draggedPieceIndex = -1;
         dealPieces();
         invalidate();
+    }
+
+    private int getTopSafeInset() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return 0;
+        }
+
+        WindowInsets insets = getRootWindowInsets();
+        if (insets == null) {
+            return 0;
+        }
+
+        int safeTop = insets.getSystemWindowInsetTop();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            DisplayCutout cutout = insets.getDisplayCutout();
+            if (cutout != null) {
+                safeTop = Math.max(safeTop, cutout.getSafeInsetTop());
+            }
+        }
+
+        return safeTop;
+    }
+
+    private void loadHighScores() {
+        for (int i = 0; i < HIGH_SCORE_COUNT; i++) {
+            highScores[i] = preferences.getInt(HIGH_SCORE_KEY_PREFIX + i, 0);
+        }
+    }
+
+    private void saveScoreIfNeeded() {
+        if (scoreSaved) {
+            return;
+        }
+
+        scoreSaved = true;
+
+        for (int i = 0; i < HIGH_SCORE_COUNT; i++) {
+            if (score > highScores[i]) {
+                for (int j = HIGH_SCORE_COUNT - 1; j > i; j--) {
+                    highScores[j] = highScores[j - 1];
+                }
+                highScores[i] = score;
+                saveHighScores();
+                return;
+            }
+        }
+    }
+
+    private void saveHighScores() {
+        SharedPreferences.Editor editor = preferences.edit();
+        for (int i = 0; i < HIGH_SCORE_COUNT; i++) {
+            editor.putInt(HIGH_SCORE_KEY_PREFIX + i, highScores[i]);
+        }
+        editor.apply();
     }
 
     private void dealPieces() {
