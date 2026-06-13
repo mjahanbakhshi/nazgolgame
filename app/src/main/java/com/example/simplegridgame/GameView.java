@@ -81,6 +81,8 @@ public class GameView extends View {
     private boolean poured = false;
     private boolean bottleClosed = false;
     private PerfumeResult result;
+    private long animationStartMs = 0L;
+    private String activeCraftAnimation = "";
 
     public GameView(Context context) {
         super(context);
@@ -169,12 +171,14 @@ public class GameView extends View {
         } else if ("addAlcohol".equals(action)) {
             alcoholAdded = true;
             statusText = "Alcohol base added.";
+            startCraftAnimation("alcohol");
         } else if ("pound".equals(action)) {
             if (!alcoholAdded) {
                 statusText = "Add alcohol first.";
             } else {
                 pounded = true;
                 statusText = "Materials released their scent.";
+                startCraftAnimation("pound");
             }
         } else if ("strain".equals(action)) {
             if (!pounded) {
@@ -182,6 +186,7 @@ public class GameView extends View {
             } else {
                 strained = true;
                 statusText = "The liquid is clear and pretty.";
+                startCraftAnimation("strain");
             }
         } else if ("toBottle".equals(action)) {
             if (!strained) {
@@ -242,8 +247,15 @@ public class GameView extends View {
         poured = false;
         bottleClosed = false;
         result = null;
+        activeCraftAnimation = "";
+        animationStartMs = 0L;
         screen = Screen.CUSTOMER;
         statusText = "A new customer entered the shop.";
+    }
+
+    private void startCraftAnimation(String name) {
+        activeCraftAnimation = name;
+        animationStartMs = System.currentTimeMillis();
     }
 
     private CustomerRequest createRequest() {
@@ -499,20 +511,141 @@ public class GameView extends View {
     }
 
     private void drawBowl(Canvas canvas, float cx, float cy) {
+        float elapsed = animationStartMs == 0L ? 9999f : (System.currentTimeMillis() - animationStartMs) / 1000f;
+        boolean alcoholAnimating = "alcohol".equals(activeCraftAnimation) && elapsed < 1.7f;
+        boolean poundAnimating = "pound".equals(activeCraftAnimation) && elapsed < 2.2f;
+        boolean strainAnimating = "strain".equals(activeCraftAnimation) && elapsed < 1.4f;
+
+        if (screen == Screen.CRAFT && (alcoholAnimating || poundAnimating || strainAnimating)) {
+            postInvalidateOnAnimation();
+        } else if (elapsed >= 2.2f) {
+            activeCraftAnimation = "";
+        }
+
+        float shake = poundAnimating ? (float) Math.sin(elapsed * 38f) * 10f : 0f;
+        float bob = poundAnimating ? (float) Math.abs(Math.sin(elapsed * 18f)) * 16f : 0f;
+        cx += shake;
+
+        drawCraftSparkles(canvas, cx, cy, elapsed, alcoholAnimating || poundAnimating || strainAnimating);
+
         shapePaint.setColor(Color.WHITE);
         rect.set(cx - 140f, cy - 35f, cx + 140f, cy + 115f);
         canvas.drawRoundRect(rect, 70f, 70f, shapePaint);
+
+        shapePaint.setColor(Color.rgb(255, 237, 246));
+        rect.set(cx - 118f, cy + 16f, cx + 118f, cy + 92f);
+        canvas.drawRoundRect(rect, 38f, 38f, shapePaint);
+
+        if (alcoholAdded) {
+            int liquidColor = blendSelectedMaterialColors(Color.rgb(132, 219, 242));
+            int alpha = strained ? 170 : pounded ? 145 : 120;
+            shapePaint.setColor(Color.argb(alpha, Color.red(liquidColor), Color.green(liquidColor), Color.blue(liquidColor)));
+            rect.set(cx - 110f, cy + 35f, cx + 110f, cy + 88f);
+            canvas.drawRoundRect(rect, 34f, 34f, shapePaint);
+
+            drawSwirl(canvas, cx, cy + 62f, elapsed, liquidColor, poundAnimating || strainAnimating);
+            drawBubbles(canvas, cx, cy, elapsed, poundAnimating || alcoholAnimating);
+        }
+
         linePaint.setColor(Color.rgb(104, 64, 158));
         canvas.drawArc(rect, 0f, 180f, false, linePaint);
         for (int i = 0; i < selectedMaterials.size(); i++) {
             shapePaint.setColor(selectedMaterials.get(i).color);
-            canvas.drawCircle(cx - 70f + i * 46f, cy + 35f + (i % 2) * 20f, 20f, shapePaint);
+            float orbit = poundAnimating ? (float) Math.sin(elapsed * 10f + i) * 15f : 0f;
+            float size = pounded ? 13f : 20f;
+            canvas.drawCircle(cx - 70f + i * 46f + orbit, cy + 35f + (i % 2) * 20f - bob * 0.25f, size, shapePaint);
         }
-        if (alcoholAdded) {
-            shapePaint.setColor(Color.argb(120, 132, 219, 242));
-            rect.set(cx - 110f, cy + 35f, cx + 110f, cy + 88f);
-            canvas.drawRoundRect(rect, 34f, 34f, shapePaint);
+
+        drawPestle(canvas, cx, cy, bob, poundAnimating);
+
+        if (alcoholAnimating) {
+            drawAlcoholPour(canvas, cx, cy, Math.min(1f, elapsed / 1.7f));
         }
+    }
+
+    private void drawPestle(Canvas canvas, float cx, float cy, float bob, boolean active) {
+        float angleOffset = active ? (float) Math.sin((System.currentTimeMillis() - animationStartMs) / 70f) * 16f : -8f;
+        linePaint.setColor(Color.rgb(122, 92, 84));
+        linePaint.setStrokeWidth(18f);
+        canvas.drawLine(cx + 18f + angleOffset, cy - 92f - bob, cx - 18f - angleOffset, cy + 42f - bob, linePaint);
+        linePaint.setStrokeWidth(6f);
+        shapePaint.setColor(Color.rgb(166, 130, 112));
+        canvas.drawCircle(cx - 18f - angleOffset, cy + 42f - bob, 18f, shapePaint);
+    }
+
+    private void drawAlcoholPour(Canvas canvas, float cx, float cy, float progress) {
+        float startY = cy - 138f;
+        float endY = cy + 40f;
+        linePaint.setColor(Color.argb(190, 132, 219, 242));
+        linePaint.setStrokeWidth(10f);
+        canvas.drawLine(cx - 84f, startY, cx - 84f, startY + (endY - startY) * progress, linePaint);
+        linePaint.setStrokeWidth(6f);
+
+        shapePaint.setColor(Color.rgb(185, 232, 250));
+        rect.set(cx - 122f, startY - 56f, cx - 52f, startY + 2f);
+        canvas.drawRoundRect(rect, 20f, 20f, shapePaint);
+        drawText(canvas, "Alcohol", cx - 87f, startY - 18f, 18f, Color.rgb(86, 54, 130));
+    }
+
+    private void drawSwirl(Canvas canvas, float cx, float cy, float elapsed, int color, boolean active) {
+        linePaint.setColor(Color.argb(active ? 210 : 120, Color.red(color), Color.green(color), Color.blue(color)));
+        linePaint.setStrokeWidth(7f);
+        float phase = elapsed * 6f;
+        for (int i = 0; i < 3; i++) {
+            float y = cy - 18f + i * 17f;
+            float start = cx - 82f + (float) Math.sin(phase + i) * 14f;
+            rect.set(start, y - 16f, start + 160f, y + 16f);
+            canvas.drawArc(rect, 15f, 150f, false, linePaint);
+        }
+        linePaint.setStrokeWidth(6f);
+    }
+
+    private void drawBubbles(Canvas canvas, float cx, float cy, float elapsed, boolean active) {
+        shapePaint.setStyle(Paint.Style.FILL);
+        for (int i = 0; i < 7; i++) {
+            float t = active ? (elapsed * 45f + i * 23f) % 70f : i * 7f;
+            float x = cx - 80f + i * 27f + (float) Math.sin(elapsed * 4f + i) * 8f;
+            float y = cy + 88f - t;
+            shapePaint.setColor(Color.argb(135, 255, 255, 255));
+            canvas.drawCircle(x, y, 5f + i % 3, shapePaint);
+        }
+    }
+
+    private void drawCraftSparkles(Canvas canvas, float cx, float cy, float elapsed, boolean active) {
+        if (!active) {
+            return;
+        }
+
+        int[] colors = new int[] {
+                Color.rgb(255, 214, 117),
+                Color.rgb(255, 122, 170),
+                Color.rgb(130, 235, 255),
+                Color.rgb(190, 145, 255)
+        };
+        for (int i = 0; i < 10; i++) {
+            float pulse = (float) Math.abs(Math.sin(elapsed * 5f + i));
+            float x = cx - 150f + i * 34f;
+            float y = cy - 105f + (i % 3) * 38f - pulse * 18f;
+            shapePaint.setColor(Color.argb((int) (100 + pulse * 120), Color.red(colors[i % colors.length]), Color.green(colors[i % colors.length]), Color.blue(colors[i % colors.length])));
+            canvas.drawCircle(x, y, 4f + pulse * 5f, shapePaint);
+        }
+    }
+
+    private int blendSelectedMaterialColors(int fallbackColor) {
+        if (selectedMaterials.isEmpty()) {
+            return fallbackColor;
+        }
+
+        int red = Color.red(fallbackColor);
+        int green = Color.green(fallbackColor);
+        int blue = Color.blue(fallbackColor);
+        for (Material material : selectedMaterials) {
+            red += Color.red(material.color);
+            green += Color.green(material.color);
+            blue += Color.blue(material.color);
+        }
+        int count = selectedMaterials.size() + 1;
+        return Color.rgb(red / count, green / count, blue / count);
     }
 
     private void drawStepPill(Canvas canvas, String label, boolean complete, float cx, float cy) {
