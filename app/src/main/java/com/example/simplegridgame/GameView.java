@@ -28,6 +28,8 @@ public class GameView extends View {
     }
 
     private static final int MAX_MATERIALS = 4;
+    private static final float DESIGN_WIDTH = 390f;
+    private static final float DESIGN_HEIGHT = 820f;
 
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint shapePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -83,6 +85,7 @@ public class GameView extends View {
     private PerfumeResult result;
     private long animationStartMs = 0L;
     private String activeCraftAnimation = "";
+    private float contentScale = 1f;
 
     public GameView(Context context) {
         super(context);
@@ -99,29 +102,36 @@ public class GameView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         hitAreas.clear();
-        drawBackground(canvas);
-        switch (screen) {
-            case START:
-                drawStart(canvas);
-                break;
-            case CUSTOMER:
-                drawCustomer(canvas);
-                break;
-            case INGREDIENTS:
-                drawIngredients(canvas);
-                break;
-            case CRAFT:
-                drawCraft(canvas);
-                break;
-            case BOTTLE:
-                drawBottle(canvas);
-                break;
-            case DECORATE:
-                drawDecorate(canvas);
-                break;
-            case RESULT:
-                drawResult(canvas);
-                break;
+        contentScale = calculateContentScale();
+        canvas.save();
+        canvas.scale(contentScale, contentScale);
+        try {
+            drawBackground(canvas);
+            switch (screen) {
+                case START:
+                    drawStart(canvas);
+                    break;
+                case CUSTOMER:
+                    drawCustomer(canvas);
+                    break;
+                case INGREDIENTS:
+                    drawIngredients(canvas);
+                    break;
+                case CRAFT:
+                    drawCraft(canvas);
+                    break;
+                case BOTTLE:
+                    drawBottle(canvas);
+                    break;
+                case DECORATE:
+                    drawDecorate(canvas);
+                    break;
+                case RESULT:
+                    drawResult(canvas);
+                    break;
+            }
+        } finally {
+            canvas.restore();
         }
     }
 
@@ -131,8 +141,8 @@ public class GameView extends View {
             return true;
         }
 
-        float x = event.getX();
-        float y = event.getY();
+        float x = event.getX() / contentScale;
+        float y = event.getY() / contentScale;
         for (int i = hitAreas.size() - 1; i >= 0; i--) {
             HitArea hitArea = hitAreas.get(i);
             if (hitArea.rect.contains(x, y)) {
@@ -338,44 +348,44 @@ public class GameView extends View {
         canvas.drawColor(backgroundPaint.getColor());
         shapePaint.setStyle(Paint.Style.FILL);
         shapePaint.setColor(Color.rgb(255, 225, 175));
-        canvas.drawCircle(getWidth() * 0.12f, getHeight() * 0.12f, 70f, shapePaint);
+        canvas.drawCircle(viewWidth() * 0.12f, viewHeight() * 0.12f, 70f, shapePaint);
         shapePaint.setColor(Color.rgb(224, 245, 255));
-        canvas.drawCircle(getWidth() * 0.86f, getHeight() * 0.18f, 84f, shapePaint);
+        canvas.drawCircle(viewWidth() * 0.86f, viewHeight() * 0.18f, 84f, shapePaint);
         shapePaint.setColor(Color.rgb(255, 211, 230));
-        canvas.drawCircle(getWidth() * 0.18f, getHeight() * 0.86f, 92f, shapePaint);
+        canvas.drawCircle(viewWidth() * 0.18f, viewHeight() * 0.86f, 92f, shapePaint);
         drawHeader(canvas);
     }
 
     private void drawHeader(Canvas canvas) {
         float top = safeTop() + 18f;
-        drawCard(canvas, getWidth() * 0.07f, top, getWidth() * 0.93f, top + 92f, Color.WHITE);
-        drawText(canvas, "Perfume Smell", getWidth() / 2f, top + 58f, 44f, Color.rgb(104, 64, 158));
+        drawCard(canvas, viewWidth() * 0.07f, top, viewWidth() * 0.93f, top + 92f, Color.WHITE);
+        drawText(canvas, "Perfume Smell", viewWidth() / 2f, top + 58f, 44f, Color.rgb(104, 64, 158));
     }
 
     private void drawStart(Canvas canvas) {
-        float centerY = getHeight() * 0.36f;
-        drawText(canvas, "Luxury Little Shop", getWidth() / 2f, centerY - 30f, 34f, Color.rgb(188, 107, 143));
-        drawPerfumeBottle(canvas, getWidth() / 2f - 70f, centerY + 10f, 140f, 190f, Color.rgb(255, 180, 214), 1);
-        drawButton(canvas, "Start", "start", 0, getWidth() * 0.18f, getHeight() * 0.66f, getWidth() * 0.82f, getHeight() * 0.66f + 82f, Color.rgb(255, 122, 170));
-        drawButton(canvas, "Shop", "inactive", 0, getWidth() * 0.18f, getHeight() * 0.77f, getWidth() * 0.48f, getHeight() * 0.77f + 70f, Color.rgb(197, 173, 222));
-        drawButton(canvas, "Settings", "inactive", 0, getWidth() * 0.52f, getHeight() * 0.77f, getWidth() * 0.82f, getHeight() * 0.77f + 70f, Color.rgb(197, 173, 222));
-        drawText(canvas, statusText, getWidth() / 2f, getHeight() - 64f, 26f, Color.rgb(110, 78, 130));
+        float centerY = viewHeight() * 0.36f;
+        drawText(canvas, "Luxury Little Shop", viewWidth() / 2f, centerY - 30f, 34f, Color.rgb(188, 107, 143));
+        drawPerfumeBottle(canvas, viewWidth() / 2f - 70f, centerY + 10f, 140f, 190f, Color.rgb(255, 180, 214), 1);
+        drawButton(canvas, "Start", "start", 0, viewWidth() * 0.18f, viewHeight() * 0.66f, viewWidth() * 0.82f, viewHeight() * 0.66f + 82f, Color.rgb(255, 122, 170));
+        drawButton(canvas, "Shop", "inactive", 0, viewWidth() * 0.18f, viewHeight() * 0.77f, viewWidth() * 0.48f, viewHeight() * 0.77f + 70f, Color.rgb(197, 173, 222));
+        drawButton(canvas, "Settings", "inactive", 0, viewWidth() * 0.52f, viewHeight() * 0.77f, viewWidth() * 0.82f, viewHeight() * 0.77f + 70f, Color.rgb(197, 173, 222));
+        drawText(canvas, statusText, viewWidth() / 2f, viewHeight() - 64f, 26f, Color.rgb(110, 78, 130));
     }
 
     private void drawCustomer(Canvas canvas) {
-        drawCustomerPerson(canvas, getWidth() / 2f, getHeight() * 0.47f, result == null ? "neutral" : result.reaction);
-        drawSpeechBubble(canvas, request.requestText, getWidth() * 0.10f, safeTop() + 130f, getWidth() * 0.90f, safeTop() + 255f);
-        drawText(canvas, request.name + " is waiting", getWidth() / 2f, getHeight() * 0.67f, 30f, Color.rgb(104, 64, 158));
-        drawButton(canvas, "Create Perfume", "toIngredients", 0, getWidth() * 0.13f, getHeight() * 0.76f, getWidth() * 0.87f, getHeight() * 0.76f + 82f, Color.rgb(255, 122, 170));
-        drawText(canvas, statusText, getWidth() / 2f, getHeight() - 48f, 24f, Color.rgb(110, 78, 130));
+        drawCustomerPerson(canvas, viewWidth() / 2f, viewHeight() * 0.47f, result == null ? "neutral" : result.reaction);
+        drawSpeechBubble(canvas, request.requestText, viewWidth() * 0.10f, safeTop() + 130f, viewWidth() * 0.90f, safeTop() + 255f);
+        drawText(canvas, request.name + " is waiting", viewWidth() / 2f, viewHeight() * 0.67f, 30f, Color.rgb(104, 64, 158));
+        drawButton(canvas, "Create Perfume", "toIngredients", 0, viewWidth() * 0.13f, viewHeight() * 0.76f, viewWidth() * 0.87f, viewHeight() * 0.76f + 82f, Color.rgb(255, 122, 170));
+        drawText(canvas, statusText, viewWidth() / 2f, viewHeight() - 48f, 24f, Color.rgb(110, 78, 130));
     }
 
     private void drawIngredients(Canvas canvas) {
-        drawText(canvas, "Pick materials", getWidth() / 2f, safeTop() + 150f, 34f, Color.rgb(104, 64, 158));
+        drawText(canvas, "Pick materials", viewWidth() / 2f, safeTop() + 150f, 34f, Color.rgb(104, 64, 158));
         drawSelectedMaterials(canvas, safeTop() + 174f);
 
         float tabTop = safeTop() + 270f;
-        float tabWidth = getWidth() / categories.length;
+        float tabWidth = viewWidth() / categories.length;
         for (int i = 0; i < categories.length; i++) {
             int color = categories[i].equals(selectedCategory) ? Color.rgb(255, 122, 170) : Color.WHITE;
             drawButton(canvas, categories[i], "category", i, i * tabWidth + 8f, tabTop, (i + 1) * tabWidth - 8f, tabTop + 58f, color);
@@ -383,81 +393,81 @@ public class GameView extends View {
 
         List<Material> shown = filteredMaterials();
         float rowTop = tabTop + 92f;
-        float cardWidth = getWidth() * 0.42f;
+        float cardWidth = viewWidth() * 0.42f;
         for (int i = 0; i < shown.size(); i++) {
             Material material = shown.get(i);
-            float left = i % 2 == 0 ? getWidth() * 0.06f : getWidth() * 0.52f;
+            float left = i % 2 == 0 ? viewWidth() * 0.06f : viewWidth() * 0.52f;
             float top = rowTop + (i / 2) * 112f;
             drawMaterialCard(canvas, material, left, top, left + cardWidth, top + 86f, i);
         }
 
-        drawButton(canvas, "To Bowl", "toCraft", 0, getWidth() * 0.18f, getHeight() - 118f, getWidth() * 0.82f, getHeight() - 42f, Color.rgb(74, 212, 184));
-        drawText(canvas, statusText, getWidth() / 2f, getHeight() - 140f, 23f, Color.rgb(110, 78, 130));
+        drawButton(canvas, "To Bowl", "toCraft", 0, viewWidth() * 0.18f, viewHeight() - 118f, viewWidth() * 0.82f, viewHeight() - 42f, Color.rgb(74, 212, 184));
+        drawText(canvas, statusText, viewWidth() / 2f, viewHeight() - 140f, 23f, Color.rgb(110, 78, 130));
     }
 
     private void drawCraft(Canvas canvas) {
-        drawText(canvas, "Craft the scent", getWidth() / 2f, safeTop() + 150f, 34f, Color.rgb(104, 64, 158));
-        drawBowl(canvas, getWidth() / 2f, getHeight() * 0.36f);
-        drawStepPill(canvas, "Alcohol", alcoholAdded, getWidth() * 0.20f, getHeight() * 0.53f);
-        drawStepPill(canvas, "Pounded", pounded, getWidth() * 0.50f, getHeight() * 0.53f);
-        drawStepPill(canvas, "Strained", strained, getWidth() * 0.80f, getHeight() * 0.53f);
-        drawButton(canvas, "Add Alcohol", "addAlcohol", 0, getWidth() * 0.10f, getHeight() * 0.62f, getWidth() * 0.90f, getHeight() * 0.62f + 68f, Color.rgb(114, 209, 238));
-        drawButton(canvas, "Pound Materials", "pound", 0, getWidth() * 0.10f, getHeight() * 0.72f, getWidth() * 0.90f, getHeight() * 0.72f + 68f, Color.rgb(255, 185, 94));
-        drawButton(canvas, "Strain Liquid", "strain", 0, getWidth() * 0.10f, getHeight() * 0.82f, getWidth() * 0.90f, getHeight() * 0.82f + 68f, Color.rgb(190, 145, 255));
-        drawButton(canvas, "Choose Bottle", "toBottle", 0, getWidth() * 0.18f, getHeight() - 90f, getWidth() * 0.82f, getHeight() - 26f, Color.rgb(255, 122, 170));
-        drawText(canvas, statusText, getWidth() / 2f, getHeight() * 0.59f, 23f, Color.rgb(110, 78, 130));
+        drawText(canvas, "Craft the scent", viewWidth() / 2f, safeTop() + 150f, 34f, Color.rgb(104, 64, 158));
+        drawBowl(canvas, viewWidth() / 2f, viewHeight() * 0.36f);
+        drawStepPill(canvas, "Alcohol", alcoholAdded, viewWidth() * 0.20f, viewHeight() * 0.53f);
+        drawStepPill(canvas, "Pounded", pounded, viewWidth() * 0.50f, viewHeight() * 0.53f);
+        drawStepPill(canvas, "Strained", strained, viewWidth() * 0.80f, viewHeight() * 0.53f);
+        drawButton(canvas, "Add Alcohol", "addAlcohol", 0, viewWidth() * 0.10f, viewHeight() * 0.62f, viewWidth() * 0.90f, viewHeight() * 0.62f + 68f, Color.rgb(114, 209, 238));
+        drawButton(canvas, "Pound Materials", "pound", 0, viewWidth() * 0.10f, viewHeight() * 0.72f, viewWidth() * 0.90f, viewHeight() * 0.72f + 68f, Color.rgb(255, 185, 94));
+        drawButton(canvas, "Strain Liquid", "strain", 0, viewWidth() * 0.10f, viewHeight() * 0.82f, viewWidth() * 0.90f, viewHeight() * 0.82f + 68f, Color.rgb(190, 145, 255));
+        drawButton(canvas, "Choose Bottle", "toBottle", 0, viewWidth() * 0.18f, viewHeight() - 90f, viewWidth() * 0.82f, viewHeight() - 26f, Color.rgb(255, 122, 170));
+        drawText(canvas, statusText, viewWidth() / 2f, viewHeight() * 0.59f, 23f, Color.rgb(110, 78, 130));
     }
 
     private void drawBottle(Canvas canvas) {
-        drawText(canvas, "Bottle the perfume", getWidth() / 2f, safeTop() + 145f, 34f, Color.rgb(104, 64, 158));
+        drawText(canvas, "Bottle the perfume", viewWidth() / 2f, safeTop() + 145f, 34f, Color.rgb(104, 64, 158));
         float top = safeTop() + 188f;
         for (int i = 0; i < bottleOptions.length; i++) {
-            float left = getWidth() * (0.10f + i * 0.30f);
+            float left = viewWidth() * (0.10f + i * 0.30f);
             BottleOption option = bottleOptions[i];
-            drawCard(canvas, left, top, left + getWidth() * 0.22f, top + 145f, i == selectedBottle ? Color.rgb(255, 240, 250) : Color.WHITE);
-            drawPerfumeBottle(canvas, left + 25f, top + 24f, getWidth() * 0.12f, 76f, option.color, option.shape);
-            drawText(canvas, option.label, left + getWidth() * 0.11f, top + 124f, 20f, Color.rgb(104, 64, 158));
-            addHit(left, top, left + getWidth() * 0.22f, top + 145f, "bottle", i);
+            drawCard(canvas, left, top, left + viewWidth() * 0.22f, top + 145f, i == selectedBottle ? Color.rgb(255, 240, 250) : Color.WHITE);
+            drawPerfumeBottle(canvas, left + 25f, top + 24f, viewWidth() * 0.12f, 76f, option.color, option.shape);
+            drawText(canvas, option.label, left + viewWidth() * 0.11f, top + 124f, 20f, Color.rgb(104, 64, 158));
+            addHit(left, top, left + viewWidth() * 0.22f, top + 145f, "bottle", i);
         }
 
-        drawPerfumeBottle(canvas, getWidth() / 2f - 75f, getHeight() * 0.46f, 150f, 190f, bottleOptions[selectedBottle].color, bottleOptions[selectedBottle].shape);
+        drawPerfumeBottle(canvas, viewWidth() / 2f - 75f, viewHeight() * 0.46f, 150f, 190f, bottleOptions[selectedBottle].color, bottleOptions[selectedBottle].shape);
         if (funnelPlaced) {
-            drawFunnel(canvas, getWidth() / 2f, getHeight() * 0.43f);
+            drawFunnel(canvas, viewWidth() / 2f, viewHeight() * 0.43f);
         }
-        drawButton(canvas, "Funnel", "funnel", 0, getWidth() * 0.08f, getHeight() * 0.72f, getWidth() * 0.36f, getHeight() * 0.72f + 64f, Color.rgb(114, 209, 238));
-        drawButton(canvas, "Pour", "pour", 0, getWidth() * 0.38f, getHeight() * 0.72f, getWidth() * 0.64f, getHeight() * 0.72f + 64f, Color.rgb(255, 185, 94));
-        drawButton(canvas, "Close", "close", 0, getWidth() * 0.66f, getHeight() * 0.72f, getWidth() * 0.92f, getHeight() * 0.72f + 64f, Color.rgb(190, 145, 255));
-        drawButton(canvas, "Decorate", "toDecorate", 0, getWidth() * 0.18f, getHeight() - 92f, getWidth() * 0.82f, getHeight() - 28f, Color.rgb(255, 122, 170));
-        drawText(canvas, statusText, getWidth() / 2f, getHeight() * 0.68f, 23f, Color.rgb(110, 78, 130));
+        drawButton(canvas, "Funnel", "funnel", 0, viewWidth() * 0.08f, viewHeight() * 0.72f, viewWidth() * 0.36f, viewHeight() * 0.72f + 64f, Color.rgb(114, 209, 238));
+        drawButton(canvas, "Pour", "pour", 0, viewWidth() * 0.38f, viewHeight() * 0.72f, viewWidth() * 0.64f, viewHeight() * 0.72f + 64f, Color.rgb(255, 185, 94));
+        drawButton(canvas, "Close", "close", 0, viewWidth() * 0.66f, viewHeight() * 0.72f, viewWidth() * 0.92f, viewHeight() * 0.72f + 64f, Color.rgb(190, 145, 255));
+        drawButton(canvas, "Decorate", "toDecorate", 0, viewWidth() * 0.18f, viewHeight() - 92f, viewWidth() * 0.82f, viewHeight() - 28f, Color.rgb(255, 122, 170));
+        drawText(canvas, statusText, viewWidth() / 2f, viewHeight() * 0.68f, 23f, Color.rgb(110, 78, 130));
     }
 
     private void drawDecorate(Canvas canvas) {
-        drawText(canvas, "Decorate and box", getWidth() / 2f, safeTop() + 145f, 34f, Color.rgb(104, 64, 158));
-        drawPerfumeBottle(canvas, getWidth() / 2f - 70f, safeTop() + 190f, 140f, 170f, bottleOptions[selectedBottle].color, bottleOptions[selectedBottle].shape);
-        drawText(canvas, decorations[selectedDecoration], getWidth() / 2f, safeTop() + 395f, 26f, Color.rgb(188, 107, 143));
-        drawOptionRow(canvas, "Decoration", decorations, "decoration", selectedDecoration, getHeight() * 0.53f);
-        drawOptionRow(canvas, "Box", boxes, "box", selectedBox, getHeight() * 0.70f);
-        drawButton(canvas, "Hand to Customer", "finish", 0, getWidth() * 0.13f, getHeight() - 96f, getWidth() * 0.87f, getHeight() - 28f, Color.rgb(255, 122, 170));
+        drawText(canvas, "Decorate and box", viewWidth() / 2f, safeTop() + 145f, 34f, Color.rgb(104, 64, 158));
+        drawPerfumeBottle(canvas, viewWidth() / 2f - 70f, safeTop() + 190f, 140f, 170f, bottleOptions[selectedBottle].color, bottleOptions[selectedBottle].shape);
+        drawText(canvas, decorations[selectedDecoration], viewWidth() / 2f, safeTop() + 395f, 26f, Color.rgb(188, 107, 143));
+        drawOptionRow(canvas, "Decoration", decorations, "decoration", selectedDecoration, viewHeight() * 0.53f);
+        drawOptionRow(canvas, "Box", boxes, "box", selectedBox, viewHeight() * 0.70f);
+        drawButton(canvas, "Hand to Customer", "finish", 0, viewWidth() * 0.13f, viewHeight() - 96f, viewWidth() * 0.87f, viewHeight() - 28f, Color.rgb(255, 122, 170));
     }
 
     private void drawResult(Canvas canvas) {
         if (result == null) {
             result = scorePerfume();
         }
-        drawCustomerPerson(canvas, getWidth() / 2f, getHeight() * 0.32f, result.reaction);
-        drawSpeechBubble(canvas, result.customerLine, getWidth() * 0.10f, getHeight() * 0.48f, getWidth() * 0.90f, getHeight() * 0.60f);
-        drawCard(canvas, getWidth() * 0.10f, getHeight() * 0.64f, getWidth() * 0.90f, getHeight() * 0.82f, Color.WHITE);
-        drawText(canvas, result.perfumeName, getWidth() / 2f, getHeight() * 0.69f, 30f, Color.rgb(104, 64, 158));
-        drawText(canvas, result.reaction + "  Score " + result.score, getWidth() / 2f, getHeight() * 0.75f, 30f, Color.rgb(255, 122, 170));
-        drawButton(canvas, "Play Again", "playAgain", 0, getWidth() * 0.18f, getHeight() - 104f, getWidth() * 0.82f, getHeight() - 32f, Color.rgb(74, 212, 184));
+        drawCustomerPerson(canvas, viewWidth() / 2f, viewHeight() * 0.32f, result.reaction);
+        drawSpeechBubble(canvas, result.customerLine, viewWidth() * 0.10f, viewHeight() * 0.48f, viewWidth() * 0.90f, viewHeight() * 0.60f);
+        drawCard(canvas, viewWidth() * 0.10f, viewHeight() * 0.64f, viewWidth() * 0.90f, viewHeight() * 0.82f, Color.WHITE);
+        drawText(canvas, result.perfumeName, viewWidth() / 2f, viewHeight() * 0.69f, 30f, Color.rgb(104, 64, 158));
+        drawText(canvas, result.reaction + "  Score " + result.score, viewWidth() / 2f, viewHeight() * 0.75f, 30f, Color.rgb(255, 122, 170));
+        drawButton(canvas, "Play Again", "playAgain", 0, viewWidth() * 0.18f, viewHeight() - 104f, viewWidth() * 0.82f, viewHeight() - 32f, Color.rgb(74, 212, 184));
     }
 
     private void drawSelectedMaterials(Canvas canvas, float top) {
-        drawText(canvas, "Bowl: " + selectedMaterials.size() + "/" + MAX_MATERIALS, getWidth() / 2f, top + 28f, 25f, Color.rgb(110, 78, 130));
+        drawText(canvas, "Bowl: " + selectedMaterials.size() + "/" + MAX_MATERIALS, viewWidth() / 2f, top + 28f, 25f, Color.rgb(110, 78, 130));
         float chipTop = top + 45f;
-        float chipWidth = getWidth() * 0.21f;
+        float chipWidth = viewWidth() * 0.21f;
         for (int i = 0; i < selectedMaterials.size(); i++) {
-            float left = getWidth() * 0.05f + i * (chipWidth + 8f);
+            float left = viewWidth() * 0.05f + i * (chipWidth + 8f);
             Material material = selectedMaterials.get(i);
             drawCard(canvas, left, chipTop, left + chipWidth, chipTop + 44f, material.color);
             drawText(canvas, material.shortName(), left + chipWidth / 2f, chipTop + 30f, 18f, Color.WHITE);
@@ -475,8 +485,8 @@ public class GameView extends View {
     }
 
     private void drawOptionRow(Canvas canvas, String title, String[] options, String action, int selected, float top) {
-        drawText(canvas, title, getWidth() / 2f, top - 18f, 27f, Color.rgb(104, 64, 158));
-        float width = getWidth() / options.length;
+        drawText(canvas, title, viewWidth() / 2f, top - 18f, 27f, Color.rgb(104, 64, 158));
+        float width = viewWidth() / options.length;
         for (int i = 0; i < options.length; i++) {
             int color = i == selected ? Color.rgb(255, 240, 250) : Color.WHITE;
             drawButton(canvas, options[i], action, i, i * width + 8f, top, (i + 1) * width - 8f, top + 70f, color);
@@ -526,6 +536,9 @@ public class GameView extends View {
         float bob = poundAnimating ? (float) Math.abs(Math.sin(elapsed * 18f)) * 16f : 0f;
         cx += shake;
 
+        canvas.save();
+        canvas.scale(1.18f, 1.18f, cx, cy + 42f);
+        try {
         drawCraftSparkles(canvas, cx, cy, elapsed, alcoholAnimating || poundAnimating || strainAnimating);
 
         shapePaint.setColor(Color.WHITE);
@@ -560,6 +573,9 @@ public class GameView extends View {
 
         if (alcoholAnimating) {
             drawAlcoholPour(canvas, cx, cy, Math.min(1f, elapsed / 1.7f));
+        }
+        } finally {
+            canvas.restore();
         }
     }
 
@@ -708,6 +724,20 @@ public class GameView extends View {
         canvas.drawText(text, x, y, textPaint);
     }
 
+    private float calculateContentScale() {
+        float widthScale = getWidth() / DESIGN_WIDTH;
+        float heightScale = getHeight() / DESIGN_HEIGHT;
+        return Math.max(0.85f, Math.min(3.2f, Math.min(widthScale, heightScale)));
+    }
+
+    private int viewWidth() {
+        return Math.round(getWidth() / contentScale);
+    }
+
+    private int viewHeight() {
+        return Math.round(getHeight() / contentScale);
+    }
+
     private int safeTop() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return 0;
@@ -723,7 +753,7 @@ public class GameView extends View {
                 top = Math.max(top, cutout.getSafeInsetTop());
             }
         }
-        return top;
+        return Math.round(top / contentScale);
     }
 
     private boolean isLight(int color) {
