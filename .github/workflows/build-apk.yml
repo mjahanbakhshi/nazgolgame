@@ -48,3 +48,24 @@ jobs:
           name: build-log
           path: build-log.txt
           if-no-files-found: ignore
+
+      - name: Report build errors
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          text = Path("build-log.txt").read_text(errors="replace")
+          lines = [
+              line for line in text.splitlines()
+              if "error:" in line.lower()
+              or "failed" in line.lower()
+              or "failure" in line.lower()
+          ]
+          if not lines:
+              lines = text.splitlines()[-20:]
+
+          message = "\n".join(lines[-20:])
+          message = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          print(f"::error title=Gradle build failed::{message}")
+          PY
