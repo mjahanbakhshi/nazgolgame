@@ -1,8 +1,8 @@
 # Perfume Smell
 
-An Android perfume mixing game. Pick colorful scent ingredients, fill the perfume bottle, tap `Mix`, and get a playful perfume name, score, and smell description.
+An Android perfume shop game. A customer asks for a perfume style, then you choose ingredients, craft the scent, bottle it, decorate it, package it, and hand it back for a score.
 
-The first version is simple and kid-friendly: rose, vanilla, lemon, mint, lavender, and candy can be mixed into funny perfume creations.
+This version uses simple 2D placeholder drawings: customers, speech bubbles, ingredient categories, bowl crafting, alcohol, pounding, straining, bottle choices, decorations, boxes, and customer reactions.
 
 ## Build The APK Online
 
