@@ -1,8 +1,8 @@
-# Block Puzzle
+# Perfume Smell
 
-A tiny Android block puzzle game. Drag the three pieces onto the 8x8 board, fill complete rows or columns to clear them, and keep scoring until no piece fits.
+An Android perfume mixing game. Pick colorful scent ingredients, fill the perfume bottle, tap `Mix`, and get a playful perfume name, score, and smell description.
 
-The game has forgiving touch targets for small pieces, keeps the score below the phone camera/status area, and saves the top five scores on the device.
+The first version is simple and kid-friendly: rose, vanilla, lemon, mint, lavender, and candy can be mixed into funny perfume creations.
 
 ## Build The APK Online
 
