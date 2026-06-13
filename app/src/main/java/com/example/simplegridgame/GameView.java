@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.view.DisplayCutout;
 import android.view.MotionEvent;
@@ -25,6 +26,7 @@ public class GameView extends View {
     private final Paint cellPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint gridPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint ghostPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint decorationPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
     private final Random random = new Random();
@@ -51,19 +53,20 @@ public class GameView extends View {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         touchPadding = 36f * getResources().getDisplayMetrics().density;
 
-        backgroundPaint.setColor(Color.rgb(242, 246, 252));
-        cellPaint.setColor(Color.rgb(230, 236, 246));
+        backgroundPaint.setColor(Color.rgb(255, 246, 232));
+        cellPaint.setColor(Color.rgb(255, 235, 245));
 
-        gridPaint.setColor(Color.rgb(33, 43, 66));
+        gridPaint.setColor(Color.rgb(255, 146, 174));
         gridPaint.setStyle(Paint.Style.STROKE);
-        gridPaint.setStrokeWidth(3f);
+        gridPaint.setStrokeWidth(7f);
 
-        ghostPaint.setColor(Color.argb(90, 48, 128, 255));
+        ghostPaint.setColor(Color.argb(120, 66, 214, 164));
         ghostPaint.setStyle(Paint.Style.FILL);
 
-        textPaint.setColor(Color.rgb(25, 30, 40));
+        textPaint.setColor(Color.rgb(92, 55, 132));
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setFakeBoldText(true);
+        textPaint.setTypeface(Typeface.create("sans-serif-rounded", Typeface.BOLD));
 
         loadHighScores();
         dealPieces();
@@ -73,10 +76,9 @@ public class GameView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        canvas.drawColor(backgroundPaint.getColor());
-
         updateLayout();
 
+        drawBackground(canvas);
         drawScore(canvas);
         drawBoard(canvas);
         drawPlacementPreview(canvas);
@@ -104,15 +106,38 @@ public class GameView extends View {
     private void drawScore(Canvas canvas) {
         float safeTop = getTopSafeInset();
 
-        textPaint.setTextSize(70f);
-        canvas.drawText("Score: " + score, getWidth() / 2f, safeTop + 78f, textPaint);
+        float cardLeft = getWidth() * 0.08f;
+        float cardTop = safeTop + 18f;
+        float cardRight = getWidth() * 0.92f;
+        float cardBottom = safeTop + 136f;
+        decorationPaint.setStyle(Paint.Style.FILL);
+        decorationPaint.setColor(Color.WHITE);
+        rect.set(cardLeft, cardTop, cardRight, cardBottom);
+        canvas.drawRoundRect(rect, 44f, 44f, decorationPaint);
 
-        textPaint.setTextSize(34f);
-        canvas.drawText("Best: " + highScores[0], getWidth() / 2f, safeTop + 122f, textPaint);
+        decorationPaint.setColor(Color.rgb(255, 210, 87));
+        canvas.drawCircle(cardLeft + 42f, cardTop + 42f, 17f, decorationPaint);
+        decorationPaint.setColor(Color.rgb(80, 220, 180));
+        canvas.drawCircle(cardRight - 45f, cardBottom - 38f, 20f, decorationPaint);
+
+        textPaint.setColor(Color.rgb(102, 61, 156));
+        textPaint.setTextSize(62f);
+        canvas.drawText("Score " + score, getWidth() / 2f, safeTop + 76f, textPaint);
+
+        textPaint.setColor(Color.rgb(255, 118, 137));
+        textPaint.setTextSize(32f);
+        canvas.drawText("Best " + highScores[0], getWidth() / 2f, safeTop + 116f, textPaint);
     }
 
     private void drawBoard(Canvas canvas) {
         float padding = boardCellSize * 0.08f;
+        float boardRight = boardLeft + boardCellSize * BOARD_SIZE;
+        float boardBottom = boardTop + boardCellSize * BOARD_SIZE;
+
+        decorationPaint.setStyle(Paint.Style.FILL);
+        decorationPaint.setColor(Color.rgb(255, 255, 255));
+        rect.set(boardLeft - 14f, boardTop - 14f, boardRight + 14f, boardBottom + 14f);
+        canvas.drawRoundRect(rect, 36f, 36f, decorationPaint);
 
         for (int row = 0; row < BOARD_SIZE; row++) {
             for (int column = 0; column < BOARD_SIZE; column++) {
@@ -121,17 +146,17 @@ public class GameView extends View {
                 rect.set(left, top, left + boardCellSize - padding * 2f, top + boardCellSize - padding * 2f);
 
                 if (board[row][column]) {
-                    cellPaint.setColor(Color.rgb(63, 81, 181));
+                    cellPaint.setColor(Color.rgb(123, 97, 255));
                 } else {
-                    cellPaint.setColor(Color.rgb(222, 229, 241));
+                    cellPaint.setColor((row + column) % 2 == 0 ? Color.rgb(255, 229, 239) : Color.rgb(235, 246, 255));
                 }
 
-                canvas.drawRoundRect(rect, 10f, 10f, cellPaint);
+                canvas.drawRoundRect(rect, 16f, 16f, cellPaint);
             }
         }
 
-        rect.set(boardLeft, boardTop, boardLeft + boardCellSize * BOARD_SIZE, boardTop + boardCellSize * BOARD_SIZE);
-        canvas.drawRoundRect(rect, 18f, 18f, gridPaint);
+        rect.set(boardLeft, boardTop, boardRight, boardBottom);
+        canvas.drawRoundRect(rect, 24f, 24f, gridPaint);
     }
 
     private void drawPlacementPreview(Canvas canvas) {
@@ -163,6 +188,11 @@ public class GameView extends View {
             float left = slotWidth * i + (slotWidth - pieceWidth) / 2f;
             float top = trayTop + (boardCellSize * 2.8f - pieceHeight) / 2f;
 
+            decorationPaint.setColor(Color.WHITE);
+            decorationPaint.setStyle(Paint.Style.FILL);
+            rect.set(slotWidth * i + 12f, trayTop - 14f, slotWidth * (i + 1) - 12f, trayTop + boardCellSize * 2.8f + 14f);
+            canvas.drawRoundRect(rect, 36f, 36f, decorationPaint);
+
             piece.previewLeft = left;
             piece.previewTop = top;
             piece.previewCellSize = previewCellSize;
@@ -183,35 +213,75 @@ public class GameView extends View {
 
     private void drawPiece(Canvas canvas, Piece piece, float left, float top, float cellSize, Paint overridePaint, boolean isPreview) {
         float padding = cellSize * 0.1f;
-        cellPaint.setColor(piece.color);
 
         for (int[] cell : piece.cells) {
             float cellLeft = left + cell[1] * cellSize + padding;
             float cellTop = top + cell[0] * cellSize + padding;
             rect.set(cellLeft, cellTop, cellLeft + cellSize - padding * 2f, cellTop + cellSize - padding * 2f);
-            canvas.drawRoundRect(rect, isPreview ? 8f : 12f, isPreview ? 8f : 12f, overridePaint == null ? cellPaint : overridePaint);
+
+            if (overridePaint == null) {
+                cellPaint.setColor(piece.shadowColor);
+                canvas.drawRoundRect(cellLeft + 4f, cellTop + 6f, rect.right + 4f, rect.bottom + 6f, 18f, 18f, cellPaint);
+                cellPaint.setColor(piece.color);
+                canvas.drawRoundRect(rect, 18f, 18f, cellPaint);
+
+                cellPaint.setColor(piece.highlightColor);
+                rect.set(cellLeft + cellSize * 0.12f, cellTop + cellSize * 0.12f, cellLeft + cellSize * 0.34f, cellTop + cellSize * 0.23f);
+                canvas.drawRoundRect(rect, 10f, 10f, cellPaint);
+            } else {
+                canvas.drawRoundRect(rect, isPreview ? 12f : 18f, isPreview ? 12f : 18f, overridePaint);
+            }
         }
+    }
+
+    private void drawBackground(Canvas canvas) {
+        canvas.drawColor(backgroundPaint.getColor());
+
+        decorationPaint.setStyle(Paint.Style.FILL);
+        decorationPaint.setColor(Color.rgb(255, 214, 104));
+        canvas.drawCircle(getWidth() * 0.16f, getHeight() * 0.12f, 44f, decorationPaint);
+
+        decorationPaint.setColor(Color.rgb(130, 235, 255));
+        canvas.drawCircle(getWidth() * 0.86f, getHeight() * 0.18f, 58f, decorationPaint);
+
+        decorationPaint.setColor(Color.rgb(255, 175, 214));
+        canvas.drawCircle(getWidth() * 0.10f, getHeight() * 0.78f, 64f, decorationPaint);
+
+        decorationPaint.setColor(Color.rgb(178, 238, 128));
+        canvas.drawCircle(getWidth() * 0.90f, getHeight() * 0.82f, 46f, decorationPaint);
     }
 
     private void drawGameOver(Canvas canvas) {
         Paint overlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        overlayPaint.setColor(Color.argb(185, 10, 18, 30));
+        overlayPaint.setColor(Color.argb(205, 112, 83, 185));
         canvas.drawRect(0f, 0f, getWidth(), getHeight(), overlayPaint);
 
+        decorationPaint.setStyle(Paint.Style.FILL);
+        decorationPaint.setColor(Color.WHITE);
+        rect.set(getWidth() * 0.10f, getHeight() / 2f - 180f, getWidth() * 0.90f, getHeight() / 2f + 270f);
+        canvas.drawRoundRect(rect, 54f, 54f, decorationPaint);
+
         textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(68f);
+        decorationPaint.setColor(Color.rgb(255, 118, 137));
+        rect.set(getWidth() * 0.18f, getHeight() / 2f - 155f, getWidth() * 0.82f, getHeight() / 2f - 75f);
+        canvas.drawRoundRect(rect, 38f, 38f, decorationPaint);
+
+        textPaint.setTextSize(56f);
         canvas.drawText("Game Over", getWidth() / 2f, getHeight() / 2f - 110f, textPaint);
+        textPaint.setColor(Color.rgb(102, 61, 156));
         textPaint.setTextSize(36f);
         canvas.drawText("Top Scores", getWidth() / 2f, getHeight() / 2f - 45f, textPaint);
 
         textPaint.setTextSize(32f);
         for (int i = 0; i < HIGH_SCORE_COUNT; i++) {
+            textPaint.setColor(i == 0 ? Color.rgb(255, 152, 0) : Color.rgb(102, 61, 156));
             canvas.drawText((i + 1) + ". " + highScores[i], getWidth() / 2f, getHeight() / 2f + 5f + i * 38f, textPaint);
         }
 
+        textPaint.setColor(Color.rgb(0, 166, 148));
         textPaint.setTextSize(34f);
         canvas.drawText("Tap to restart", getWidth() / 2f, getHeight() / 2f + 225f, textPaint);
-        textPaint.setColor(Color.rgb(25, 30, 40));
+        textPaint.setColor(Color.rgb(92, 55, 132));
     }
 
     @Override
@@ -483,12 +553,13 @@ public class GameView extends View {
         };
 
         int[] colors = new int[] {
-                Color.rgb(63, 81, 181),
-                Color.rgb(0, 150, 136),
-                Color.rgb(255, 152, 0),
-                Color.rgb(233, 30, 99),
-                Color.rgb(76, 175, 80),
-                Color.rgb(156, 39, 176)
+                Color.rgb(255, 99, 132),
+                Color.rgb(54, 209, 220),
+                Color.rgb(255, 193, 7),
+                Color.rgb(171, 71, 188),
+                Color.rgb(76, 217, 100),
+                Color.rgb(255, 138, 76),
+                Color.rgb(90, 133, 255)
         };
 
         return new Piece(shapes[random.nextInt(shapes.length)], colors[random.nextInt(colors.length)]);
@@ -513,6 +584,8 @@ public class GameView extends View {
     private class Piece {
         final int[][] cells;
         final int color;
+        final int shadowColor;
+        final int highlightColor;
         boolean isUsed = false;
         float previewLeft = 0f;
         float previewTop = 0f;
@@ -521,6 +594,8 @@ public class GameView extends View {
         Piece(int[][] cells, int color) {
             this.cells = cells;
             this.color = color;
+            this.shadowColor = Color.argb(90, Color.red(color) / 2, Color.green(color) / 2, Color.blue(color) / 2);
+            this.highlightColor = Color.argb(150, 255, 255, 255);
         }
 
         int getRowCount() {
